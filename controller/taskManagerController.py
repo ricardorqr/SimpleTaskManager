@@ -1,4 +1,3 @@
-import sys
 import json
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import Qt
@@ -42,17 +41,10 @@ class TaskManagerController(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pushButtonComplete.pressed.connect(self.complete)
 
     def add(self):
-        """
-        Add an item to our todo list, getting the text from the QLineEdit .todoEdit
-        and then clearing it.
-        """
         text = self.lineEdit.text()
-        if text:  # Don't add empty strings.
-            # Access the list via the model.
+        if text:
             self.model.todos.append((False, text))
-            # Trigger refresh.        
             self.model.layoutChanged.emit()
-            #  Empty the input
             self.lineEdit.setText("")
             self.save()
 
@@ -92,8 +84,3 @@ class TaskManagerController(QtWidgets.QMainWindow, Ui_MainWindow):
     def save(self):
         with open(Util.find_file('data.db'), 'w') as f:
             data = json.dump(self.model.todos, f)
-
-# app = QtWidgets.QApplication(sys.argv)
-# window = MainWindow()
-# window.show()
-# app.exec_()
