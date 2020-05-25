@@ -45,6 +45,13 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="pushButtonIncomplete">
+         <property name="text">
+          <string>Incomplete</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="pushButtonComplete">
          <property name="text">
           <string>Complete</string>

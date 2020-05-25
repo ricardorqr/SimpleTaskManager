@@ -7,24 +7,24 @@ Ui_MainWindow, QtBaseClass = uic.loadUiType(Util.find_file("taskManagerUI.ui"))
 tick = QtGui.QImage(Util.find_file("tick.png"))
 
 
-class TodoModel(QtCore.QAbstractListModel):
+class TaskModel(QtCore.QAbstractListModel):
 
-    def __init__(self, *args, todos=None, **kwargs):
-        super(TodoModel, self).__init__(*args, **kwargs)
-        self.todos = todos or []
+    def __init__(self, *args, task=None, **kwargs):
+        super(TaskModel, self).__init__(*args, **kwargs)
+        self.task = task or []
 
     def data(self, index, role):
         if role == Qt.DisplayRole:
-            _, text = self.todos[index.row()]
+            _, text = self.task[index.row()]
             return text
 
         if role == Qt.DecorationRole:
-            status, _ = self.todos[index.row()]
+            status, _ = self.task[index.row()]
             if status:
                 return tick
 
     def rowCount(self, index):
-        return len(self.todos)
+        return len(self.task)
 
 
 class TaskManagerController(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -32,55 +32,63 @@ class TaskManagerController(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
         Ui_MainWindow.__init__(self)
-        self.setupUi(self)
-        self.model = TodoModel()
-        self.load()
-        self.listView.setModel(self.model)
-        self.pushButtonAdd.pressed.connect(self.add)
-        self.pushButtonDelete.pressed.connect(self.delete)
-        self.pushButtonComplete.pressed.connect(self.complete)
+        self.__model = TaskModel()
+        self.__load()
 
-    def add(self):
+        # TaskManagerUi widget components
+        self.setupUi(self)
+        self.listView.setModel(self.__model)
+        self.pushButtonAdd.pressed.connect(self.__add)
+        self.pushButtonDelete.pressed.connect(self.__delete)
+        self.pushButtonComplete.pressed.connect(self.__complete)
+        self.pushButtonIncomplete.pressed.connect(self.__incomplete)
+
+    def __add(self):
         text = self.lineEdit.text()
         if text:
-            self.model.todos.append((False, text))
-            self.model.layoutChanged.emit()
+            self.__model.task.append((False, text))
+            self.__model.layoutChanged.emit()
             self.lineEdit.setText("")
-            self.save()
+            self.__save()
 
-    def delete(self):
+    def __delete(self):
         indexes = self.listView.selectedIndexes()
         if indexes:
-            # Indexes is a list of a single item in single-select mode.
             index = indexes[0]
-            # Remove the item and refresh.
-            del self.model.todos[index.row()]
-            self.model.layoutChanged.emit()
-            # Clear the selection (as it is no longer valid).
+            del self.__model.task[index.row()]
+            self.__model.layoutChanged.emit()
             self.listView.clearSelection()
-            self.save()
+            self.__save()
 
-    def complete(self):
+    def __complete(self):
         indexes = self.listView.selectedIndexes()
         if indexes:
             index = indexes[0]
             row = index.row()
-            status, text = self.model.todos[row]
-            self.model.todos[row] = (True, text)
-            # .dataChanged takes top-left and bottom right, which are equal 
-            # for a single selection.
-            self.model.dataChanged.emit(index, index)
-            # Clear the selection (as it is no longer valid).
+            status, text = self.__model.task[row]
+            self.__model.task[row] = (True, text)
+            self.__model.dataChanged.emit(index, index)
             self.listView.clearSelection()
-            self.save()
+            self.__save()
 
-    def load(self):
+    def __incomplete(self):
+        indexes = self.listView.selectedIndexes()
+        if indexes:
+            index = indexes[0]
+            row = index.row()
+            status, text = self.__model.task[row]
+            self.__model.task[row] = (False, text)
+            self.__model.dataChanged.emit(index, index)
+            self.listView.clearSelection()
+            self.__save()
+
+    def __load(self):
         try:
-            with open(Util.find_file('data.db'), 'r') as f:
-                self.model.todos = json.load(f)
+            with open(Util.find_file('data.db'), 'r') as file:
+                self.__model.task = json.load(file)
         except Exception:
             pass
 
-    def save(self):
-        with open(Util.find_file('data.db'), 'w') as f:
-            data = json.dump(self.model.todos, f)
+    def __save(self):
+        with open(Util.find_file('data.db'), 'w') as file:
+            json.dump(self.__model.task, file)
